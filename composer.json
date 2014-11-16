@@ -3,6 +3,7 @@
     "description": "",
     "require": {
 		"symfony/serializer": "2.4.*",
+		"symfony/yaml": "2.4.*",
 		"symfony/validator": "2.4.*",
 		"doctrine/annotations": "1.2.*",
 		"doctrine/cache": "1.2.*"

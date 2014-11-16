@@ -27,8 +27,9 @@ class PartialBuild
 
 	public function get()
 	{
-		if(count(array_diff_key($this->cachedRequiredConstructorParameters, $this->parameters)) != 0) {
-			throw new RuntimeException('Some required parameters were not specified');
+		$unspecifiedParameters = array_keys(array_diff_key($this->cachedRequiredConstructorParameters, $this->parameters));
+		if(count($unspecifiedParameters) != 0) {
+			throw new RuntimeException('Some required parameters were not specified: ' . implode(', ', $unspecifiedParameters));
 		}
 		$parameters = array();
 		foreach($this->cachedConstructorParameters as $name => $_) {
