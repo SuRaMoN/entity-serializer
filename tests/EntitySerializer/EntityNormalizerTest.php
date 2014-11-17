@@ -76,5 +76,19 @@ class EntityNormalizerTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals(array('john', 'aliza'), $entity->getNames());
 		$this->assertEquals('john', $entity->getSubEntity()->getName());
 	}
+
+	/** @test */
+	public function testNormalizeEntityWithArrayOfEntities()
+	{
+		$data = array('subEntities' => array(
+			array('name' => 'john'),
+			array('name' => 'aliza'),
+		));
+		$entity = $this->createNormalizer()->denormalize($data, 'EntitySerializer\TestClass\EntityWithArrayOfEntities');
+		$this->assertCount(2, $entity->getSubEntities());
+		$subEntities = $entity->getSubEntities();
+		$this->assertEquals('john', $subEntities[0]->getName());
+		$this->assertEquals('aliza', $subEntities[1]->getName());
+	}
 }
 

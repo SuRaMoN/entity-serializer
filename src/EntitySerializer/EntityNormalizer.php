@@ -2,6 +2,7 @@
 
 namespace EntitySerializer;
 
+use Doctrine\Common\Annotations\AnnotationReader;
 use Exception;
 use ReflectionClass;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -24,6 +25,7 @@ class EntityNormalizer implements NormalizerInterface, DenormalizerInterface
 			->getValidator();
 		$this->getSetNormalizer = new GetSetMethodNormalizer();
 		$this->builder = new Builder();
+		$this->annotationReader = new AnnotationReader();
 	}
 
     public function normalize($object, $format = null, array $context = array())
@@ -33,14 +35,25 @@ class EntityNormalizer implements NormalizerInterface, DenormalizerInterface
 
     public function denormalize($data, $class, $format = null, array $context = array())
 	{
-		switch($class) {
-			case 'string':
+		switch(true) {
+			case 'string' === $class:
 				return (string) $data;
-			case 'array':
+			case 'array' === $class:
 				return (array) $data;
+			case preg_match('/^array<(?P<className>[^,><]+)>$/', $class, $match):
+				return $this->denormalizeTypedArray($data, $match['className'], $format, $context);
 			default:
 				return $this->denormalizeObject($data, $class, $format, $context);
 		}
+	}
+
+	private function denormalizeTypedArray($data, $class, $format = null, array $context = array())
+	{
+		$result = array();
+		foreach($data as $element) {
+			$result[] = $this->denormalizeObject($element, $class, $format, $context);
+		}
+		return $result;
 	}
 
     private function denormalizeObject($data, $class, $format = null, array $context = array())
@@ -61,11 +74,29 @@ class EntityNormalizer implements NormalizerInterface, DenormalizerInterface
 
 	private function getType($data, $name, $containerType)
 	{
+		$type = $this->tryGetTypeByAnnotation($name, $containerType);
+		if(null !== $type) {
+			return $type;
+		}
 		$type = $this->tryGetTypeByContainerTypeHint($name, $containerType);
 		if(null !== $type) {
 			return $type;
 		}
 		return 'string';
+	}
+
+	private function tryGetTypeByAnnotation($name, $containerType)
+	{
+		$classReflector = new ReflectionClass($containerType);
+		if(! $classReflector->hasProperty($name)) {
+			return null;
+		}
+		$reflector = $classReflector->getProperty($name);
+		$annotation = $this->annotationReader->getPropertyAnnotation($reflector, 'JMS\Serializer\Annotation\Type');
+		if(null === $annotation) {
+			return null;
+		}
+		return $annotation->name;
 	}
 
 	private function tryGetTypeByContainerTypeHint($name, $containerType)
@@ -85,7 +116,6 @@ class EntityNormalizer implements NormalizerInterface, DenormalizerInterface
 		}
 		return null;
 	}
-	
 
     public function supportsDenormalization($data, $type, $format = null)
 	{

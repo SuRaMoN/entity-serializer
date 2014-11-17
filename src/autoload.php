@@ -7,3 +7,8 @@ Doctrine\Common\Annotations\AnnotationRegistry::registerAutoloadNamespace(
     __DIR__ . '/../vendor/symfony/validator'
 );
  
+Doctrine\Common\Annotations\AnnotationRegistry::registerAutoloadNamespace(
+    'JMS\Serializer\Annotation', 
+    __DIR__ . '/../vendor/jms/serializer/src'
+);
+ 
