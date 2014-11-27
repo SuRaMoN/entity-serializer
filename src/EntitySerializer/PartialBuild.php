@@ -25,8 +25,15 @@ class PartialBuild
 		}
 	}
 
-	public function get()
+	public function get($parameterName = null)
 	{
+		if(null !== $parameterName) {
+			if(! array_key_exists($parameterName, $this->parameters)) {
+				throw new RuntimeException("Trying to get unknown value: '$parameterName'");
+			}
+			return $this->parameters[$parameterName];
+		}
+
 		$unspecifiedParameters = array_keys(array_diff_key($this->cachedRequiredConstructorParameters, $this->parameters));
 		if(count($unspecifiedParameters) != 0) {
 			throw new RuntimeException('Some required parameters were not specified: ' . implode(', ', $unspecifiedParameters));
@@ -43,14 +50,16 @@ class PartialBuild
 
 	public function __call($name, $parameters)
 	{
-		if(strpos($name, 'set') !== 0) {
-			throw new Exception("Unknown function: $name");
+		if(strpos($name, 'set') === 0) {
+			if(count($parameters) != 1) {
+				throw new Exception("Can only pass one parameter as value");
+			}
+			return $this->set(lcfirst(substr($name, 3)), reset($parameters));
 		}
-		$name = lcfirst(substr($name, 3));
-		if(count($parameters) != 1) {
-			throw new Exception("Can only pass one parameter as value");
+		if(strpos($name, 'get') === 0) {
+			return $this->get(lcfirst(substr($name, 3)));
 		}
-		return $this->set($name, reset($parameters));
+		throw new Exception("Unknown function: $name");
 	}
 
 	public function set($name, $value)
